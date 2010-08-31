@@ -1,8 +1,8 @@
 require 'rubygems'
 require 'sinatra'
 
-set :environment, :production
+set :environment, :development
 disable :run
 
-require 'at_ead'
+require 'nwda_ead'
 run Sinatra::Application

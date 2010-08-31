@@ -1,0 +1,34 @@
+%html
+  %head
+    %title Archivists Toolkit EAD Converter for NWDA
+    %style
+      :sass
+        body
+          font-family: Verdana, Arial, sans-serif
+        label
+          font-weight: bold
+          width: 175px
+          display: inline-table
+          vertical-align: middle
+  %body
+    %h1 Archivists Toolkit EAD Converter for NWDA
+    %p 
+      This service transforms EAD files created by Archivists Toolkit to bring them in line 
+      with the encoding requirements and best practice guidelines of the Northwest Digital 
+      Archives.
+    %p
+      Select an EAD file to upload, and specify how you would like to receive the transformed
+      XML.
+    %form{:method => 'POST', :enctype => 'multipart/form-data'}
+      %p
+        %label{:for => 'ead_file'} File to Upload: 
+        %input{:type => 'file', :name => 'ead_file'}
+      %p
+        %label{:for => 'disposition'} Receive output as:
+        %select{:name => 'disposition'}
+          %option{:value => 'xml'} XML (in-browser)
+          %option{:value => 'xmlfile'} XML (download)
+          %option{:value => 'html'} HTML (display)
+      %p
+        %label{:for => 'submit'} &nbsp;
+        %input{:type => 'submit', :value => 'Submit'}

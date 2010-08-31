@@ -1,0 +1,21 @@
+%html
+  %head
+    %title= @filename
+    %style
+      :sass
+        body
+          color: black
+          font-weight: bold
+        .punct
+          color: black
+          font-weight: normal
+        .tag
+          color: #006699
+        .string
+          color: blue
+          font-weight: normal
+        .attribute
+          color: red
+          font-weight: normal
+  %body
+    %div~ @output
