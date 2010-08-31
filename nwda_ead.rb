@@ -17,18 +17,19 @@ end
 post '/ead' do
   xml = Nokogiri::XML(params[:ead_file][:tempfile].read)
   xslt = Nokogiri::XSLT(File.read('public/nwda_ead.xsl'))
-  @ead = xslt.transform(xml).to_xml
+  @ead = xslt.transform(xml)
+  @result = @ead.to_xml
+  @filename = @ead.search('eadid').text
 
-  @filename = params[:ead_file][:filename]
   if params[:disposition] =~ /^xml/
     content_type :xml
     if params[:disposition] =~ /file$/
       attachment @filename
     end
-    @ead
+    @result
   else
     parser = Syntax::Convertors::HTML.for_syntax('xml')
-    @output = parser.convert(@ead,true)
+    @output = parser.convert(@result,true)
     content_type :html
     haml :ead
   end
