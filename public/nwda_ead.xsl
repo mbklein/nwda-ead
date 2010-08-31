@@ -3,7 +3,7 @@
   xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:ead="urn:isbn:1-931666-22-9"
   xmlns:fn="http://exslt.org/common" 
   exclude-result-prefixes="xsl ead fn">
-  <xsl:output standalone="yes"/>
+  <xsl:output media-type="application/xml" standalone="yes"/>
   <xsl:variable name="UPPER">ABCDEFGHIJKLMNOPQRSTUVWXYZ</xsl:variable>
   <xsl:variable name="LOWER">abcdefghijklmnopqrstuvwxyz</xsl:variable>
 
