@@ -1,3 +1,4 @@
+sinatra --version 0.9.4
 syntax --version >=1.0.0
 nokogiri --version >= 1.4.3
 haml --version >= 2.2.16
