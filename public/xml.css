@@ -1,0 +1,23 @@
+body {
+  color: black;
+  font-weight: bold;
+}
+
+span.punct {
+  color: black;
+  font-weight: normal;
+}
+
+span.tag {
+  color: #006699;
+}
+
+span.string {
+  color: blue;
+  font-weight: normal;
+}
+
+span.attribute {
+  color: red;
+  font-weight: normal;
+}
