@@ -1,32 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
-  xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:ead="urn:isbn:1-931666-22-9"
-  xmlns:fn="http://exslt.org/common" 
+  xmlns:ead="urn:isbn:1-931666-22-9" xmlns:fn="http://exslt.org/common"
   exclude-result-prefixes="xsl ead fn">
-  <xsl:output media-type="application/xml" standalone="yes"/>
+  <xsl:output method="xml" indent="yes" 
+    doctype-system="ead.dtd"  
+    doctype-public="+//ISBN 1-931666-00-8//DTD ead.dtd (Encoded Archival Description (EAD) Version 2002)//EN"/>
   <xsl:variable name="UPPER">ABCDEFGHIJKLMNOPQRSTUVWXYZ</xsl:variable>
   <xsl:variable name="LOWER">abcdefghijklmnopqrstuvwxyz</xsl:variable>
 
   <!-- Utility Templates -->
-
-  <!-- 
-    Copy all attributes except those passed in as a space-delimited list in the except parameter.
-    Used to fulfill requirement 5 ("Remove all label attributes") among other things.
-  -->
-  <xsl:template name="copy-attributes">
-    <!-- Exclude certain attributes (default: @label) -->
-    <xsl:param name="except">label</xsl:param>
-    <xsl:variable name="except-match">
-      <xsl:text>|</xsl:text>
-      <xsl:value-of select="translate($except,' ','|')"/>
-      <xsl:text>|</xsl:text>
-    </xsl:variable>
-    <xsl:for-each select="@*">
-      <xsl:if test="not(contains($except-match,concat('|',name(),'|')))">
-        <xsl:copy/>
-      </xsl:if>
-    </xsl:for-each>
-  </xsl:template>
 
   <!-- Remove whitespace surrounding delimiters in text strings -->
   <xsl:template name="normalize-delimited-text">
@@ -52,22 +34,36 @@
 
   <xsl:template name="add-attributes">
     <xsl:param name="attributes"/>
-    <xsl:copy>
-      <xsl:call-template name="copy-attributes"/>
+    <xsl:variable name="local-name" select="local-name()"/>
+    <xsl:variable name="first-occurrence" select="not(preceding::*[local-name() = $local-name])"/>
+    <xsl:element name="{$local-name}">
+      <xsl:apply-templates select="@*"/>
       <xsl:if test="$attributes">
         <xsl:variable name="attrs" select="fn:node-set($attributes)"/>
         <xsl:for-each select="$attrs/*">
-          <xsl:variable name="attr-name" select="name()"/>
+          <xsl:variable name="attr-name" select="local-name()"/>
           <xsl:variable name="attr-value" select="./text()"/>
           <xsl:if test="$attr-value">
-            <xsl:attribute name="{$attr-name}">
-              <xsl:value-of select="$attr-value"/>
-            </xsl:attribute>
+            <!-- Special case: Only put the 'id' attribute on the first occurrence -->
+            <xsl:choose>
+              <xsl:when test="$attr-name != 'id'">
+                <xsl:attribute name="{$attr-name}">
+                  <xsl:value-of select="$attr-value"/>
+                </xsl:attribute>
+              </xsl:when>
+              <xsl:otherwise>
+                <xsl:if test="$first-occurrence">
+                  <xsl:attribute name="{$attr-name}">
+                    <xsl:value-of select="$attr-value"/>
+                  </xsl:attribute>
+                </xsl:if>
+              </xsl:otherwise>
+            </xsl:choose>
           </xsl:if>
         </xsl:for-each>
       </xsl:if>
       <xsl:apply-templates/>
-    </xsl:copy>
+    </xsl:element>
   </xsl:template>
 
   <!-- Add @id values and DC @encodinganalogs to eadheader -->
@@ -75,7 +71,7 @@
   <xsl:template match="ead:eadheader">
     <xsl:call-template name="add-attributes">
       <xsl:with-param name="attributes">
-        <id>a23</id>
+        <id>a0</id>
         <relatedencoding>dc</relatedencoding>
       </xsl:with-param>
     </xsl:call-template>
@@ -192,7 +188,6 @@
     <xsl:call-template name="add-attributes">
       <xsl:with-param name="attributes">
         <encodinganalog>100</encodinganalog>
-        <role><xsl:call-template name="normalize-role"/></role>
       </xsl:with-param>
     </xsl:call-template>
   </xsl:template>
@@ -201,7 +196,6 @@
     <xsl:call-template name="add-attributes">
       <xsl:with-param name="attributes">
         <encodinganalog>110</encodinganalog>
-        <role><xsl:call-template name="normalize-role"/></role>
       </xsl:with-param>
     </xsl:call-template>
   </xsl:template>
@@ -210,7 +204,6 @@
     <xsl:call-template name="add-attributes">
       <xsl:with-param name="attributes">
         <encodinganalog>100</encodinganalog>
-        <role><xsl:call-template name="normalize-role"/></role>
       </xsl:with-param>
     </xsl:call-template>
   </xsl:template>
@@ -411,7 +404,7 @@
     </xsl:call-template>
   </xsl:template>
 
-  <xsl:template match="ead:archdesc//ead:controlaccess/ead:subject">
+  <xsl:template match="ead:archdesc//ead:controlaccess/ead:subject[@source != 'nwda']">
     <xsl:call-template name="add-attributes">
       <xsl:with-param name="attributes">
         <encodinganalog>650</encodinganalog>
@@ -564,41 +557,34 @@
     </xsl:call-template>
   </xsl:template>
 
-  <!-- 6. Remove all head elements except bioghist/head -->
-  <xsl:template match="ead:head[not(parent::ead:bioghist)]"/>
-
   <!-- 8. Add appropriate type attribute to dsc element -->
   <xsl:template match="ead:dsc">
-    <xsl:copy>
-      <xsl:call-template name="copy-attributes"/>
-      <xsl:attribute name="id">a23</xsl:attribute>
-      <xsl:choose>
-        <xsl:when
-          test="*[starts-with(local-name(),'c0') and (@level='series' or @level='subgrp')] and *[starts-with(local-name(),'c0') and (@level='file' or @level='item')]">
-          <xsl:attribute name="type">combined</xsl:attribute>
-        </xsl:when>
-        <xsl:when test="*[starts-with(local-name(),'c0') and (@level='series' or @level='subgrp')]">
-          <xsl:attribute name="type">analyticover</xsl:attribute>
-        </xsl:when>
-        <xsl:when test="*[starts-with(local-name(),'c0') and (@level='file' or @level='item')]">
-          <xsl:attribute name="type">in-depth</xsl:attribute>
-        </xsl:when>
-      </xsl:choose>
-      <xsl:apply-templates/>
-    </xsl:copy>
+    <xsl:call-template name="add-attributes">
+      <xsl:with-param name="attributes">
+        <id>a23</id>
+        <type>
+          <xsl:choose>
+            <xsl:when test="*[starts-with(local-name(),'c0') and (@level='series' or @level='subgrp')] and 
+              *[starts-with(local-name(),'c0') and (@level='file' or @level='item')]">combined</xsl:when>
+            <xsl:when test="*[starts-with(local-name(),'c0') and (@level='series' or @level='subgrp')]">analyticover</xsl:when>
+            <xsl:when test="*[starts-with(local-name(),'c0') and (@level='file' or @level='item')]">in-depth</xsl:when>
+          </xsl:choose>
+        </type>
+      </xsl:with-param>
+    </xsl:call-template>
   </xsl:template>
 
   <!-- 10. Convert container type values to lowercase -->
   <xsl:template match="ead:container">
-    <xsl:copy>
-      <xsl:call-template name="copy-attributes"/>
+    <xsl:element name="{local-name()}">
+      <xsl:apply-templates select="@*"/>
       <xsl:if test="@type">
         <xsl:attribute name="type">
           <xsl:value-of select="translate(@type,$UPPER,$LOWER)"/>
         </xsl:attribute>
       </xsl:if>
       <xsl:apply-templates/>
-    </xsl:copy>
+    </xsl:element>
   </xsl:template>
 
   <!-- 11. Remove whitespace in controlaccess headings -->
@@ -609,38 +595,57 @@
     </xsl:call-template>
   </xsl:template>
 
+  <!-- 6. Remove all head elements except bioghist/head -->
+  <xsl:template match="ead:head[not(parent::ead:bioghist)]"/>
+  
   <!-- 12. Remove call number from title -->
   <xsl:template match="ead:titleproper/ead:num"/>
 
   <!-- 13. Replace incorrect role attribute values -->
-  <xsl:template name="normalize-role">
-    <xsl:if test="@role">
+  <xsl:template match="ead:origination/ead:*/@role">
+    <xsl:attribute name="role">
       <xsl:choose>
-        <xsl:when test="contains(@role,'(')">
+        <xsl:when test="contains(.,'(')">
           <xsl:value-of
-            select="translate(normalize-space(substring-before(@role,'(')),$UPPER,$LOWER)"/>
+            select="translate(normalize-space(substring-before(.,'(')),$UPPER,$LOWER)"/>
         </xsl:when>
         <xsl:otherwise>
-          <xsl:value-of select="@role"/>
+          <xsl:value-of select="."/>
         </xsl:otherwise>
       </xsl:choose>
-    </xsl:if>
+    </xsl:attribute>
   </xsl:template>
 
-  <xsl:template match="ead:origination/ead:*" priority="1">
-    <xsl:call-template name="add-attributes">
-      <xsl:with-param name="attributes">
-        <role><xsl:call-template name="normalize-role"/></role>
-      </xsl:with-param>
-    </xsl:call-template>
+  <!-- Fix nested <c> elements -->
+  <xsl:template match="ead:c">
+    <xsl:variable name="nesting-level" select="count(ancestor::ead:c)+1"/>
+    <xsl:variable name="display-level">
+      <xsl:if test="$nesting-level &lt; 10">0</xsl:if><xsl:value-of select="$nesting-level"/>
+    </xsl:variable>
+    <xsl:element name="c{$display-level}">
+      <xsl:apply-templates select="@*|node()"/>
+    </xsl:element>
   </xsl:template>
 
-  <!-- Pass all other elements and attributes through unaltered -->
-  <xsl:template match="*">
+  <xsl:template match="/|comment()|processing-instruction()">
     <xsl:copy>
-      <xsl:call-template name="copy-attributes"/>
       <xsl:apply-templates/>
     </xsl:copy>
   </xsl:template>
 
+  <xsl:template match="*">
+    <xsl:element name="{local-name()}">
+      <xsl:apply-templates select="@*|node()"/>
+    </xsl:element>
+  </xsl:template>
+  
+  <xsl:template match="@label"/>
+  <xsl:template match="@*[local-name() = 'schemaLocation']"/>
+  
+  <xsl:template match="@*">
+    <xsl:attribute name="{local-name()}">
+      <xsl:value-of select="."/>
+    </xsl:attribute>
+  </xsl:template>
+  
 </xsl:stylesheet>
